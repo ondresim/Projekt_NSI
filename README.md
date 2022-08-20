@@ -1,8 +1,8 @@
 <div align="center">
 
-# Systém Indoor navigace pomoc Wi-Fi
+# Systém Indoor navigace pomocí Wi-Fi
 
-  Projekt předmětu NSI
+  Závěrečný projekt předmětu NSI
   
   Šimon Ondřej
   
@@ -13,7 +13,7 @@
 ## Cíle
 Cílem projektu je vytvoření systému vnitřní navigace za pomoci vývojové desky ESP8266. Deska bude mít za úkol skenovat WiFi access pointy (AP) a z nich získat hodnotu Received Signal Strength Indicator (RSSI). Tato data budou následně ukládána a pomocí nich natrénovány klasifikátory strojového učení.
   
-## Rozbor řešení:
+## Rozbor řešení
 Projekt se skládá z následujících dílčích částí:
 - Sbírání a přenos dat
 - Ukládání dat a práce s daty
@@ -22,7 +22,7 @@ Projekt se skládá z následujících dílčích částí:
   
 ### 1. Sbírání a přenos dat (ESP8266_MQTT.ino):
   
-Vývojová deska ESP8266 se nejprve připojí k předem určené Wi-Fi síti pomocí knihovny ESP8266WiFi [1]. Dále začne skenovat SSID a RSSI z access pointů, které jsou v blízkosti a ukládat data ve formátu python dictionary. 
+Vývojová deska ESP8266 se nejprve připojí k předem určené Wi-Fi síti pomocí knihovny ESP8266WiFi [1]. Dále začne skenovat SSID a RSSI z AP, které jsou v blízkosti a ukládat data ve formátu python dictionary. 
 <br />
 <br />
 V lokální síti jsou zařízení jedno pro druhé lehce přístupné a mohou spolu bez problémů komunikovat. Ve veřejné síti je však situace horší. Je nutné se nějakým způsobem vypořádat s Network address translation (NAT). NAT je technika, která zajišťuje mapování privátních IP adres na veřejné [2]. Kvůli tomu se nelze snadno z veřejné sítě připojit na určité zařízení v lokální síti.
@@ -33,24 +33,26 @@ Možnosti řešení tohoto problému jsou:
   -	Metoda hole punching [5]
   - Application Layer Gateway (ALG)
   
-Alternativním způsobem, jak tento problém obejít je použít prostředníka ke komunikaci, ke kterému se obě koncová zařízení připojí a komunikují skrz něj. Takovýmto prostředníkem může být například MQTT broker [6].
+Alternativním způsobem, jak tento problém obejít, je použít prostředníka ke komunikaci, ke kterému se obě koncová zařízení připojí a komunikují skrz něj. Takovýmto prostředníkem může být například MQTT broker [6].
   
 Právě komunikace a přenos dat přes MQTT broker byly zvoleny kvůli své jednoduchosti a dostupnosti knihoven jak pro Python, tak pro ESP8266. Dokumentace knihoven je zde [7, 8].
 <br />
   
 ### 2. Ukládání dat a práce s daty (MQTTCommunication2.0.py):
   
-Data, která jsou publikována na MQTT broker jsou sbírána pomocí skriptu MQTTCommunication2.0.py, který se subscribne na daný topic a následně vkládá data do pole slovníků. Při nasbírání definovaného množství vzorků jsou data uložena do csv souboru ve formě pandas DataFrame.
+Data, která jsou publikována na MQTT broker, jsou sbírána pomocí skriptu MQTTCommunication2.0.py, který se subscribne na daný topic a následně vkládá data do pole slovníků. Při nasbírání definovaného množství vzorků jsou data uložena do csv souboru ve formě pandas DataFrame.
   
-Při sběru dat v je vzhledem k dosahu signálu z Wi-Fi téměř jisté, že vždy budou v různých místech dostupné jiné AP. Z toho důvodu se v datech vyskytuje velké množství chybějících hodnot (NaN).
+Při sběru dat v je vzhledem k dosahu signálu z Wi-Fi téměř jisté, že vždy budou v různých místech dostupné jiné AP. Z tohoto důvodu se v datech vyskytuje velké množství chybějících hodnot (NaN).
   
-Chybějící hodnoty tvoří velký problém pro většinu modelů strojového učení, které s nimi neumí pracovat.  Metod jak se s chybějícími daty vypořádat je mnoho a základní způsoby jsou popsány zde [9] nebo zde [10].
+Chybějící hodnoty tvoří velký problém pro většinu modelů strojového učení, které s nimi neumí pracovat.  Metod, jak se s chybějícími daty vypořádat, je mnoho a základní způsoby jsou popsány zde [9] nebo zde [10].
   
 Protože u W-Fi sítě je hlavním důvodem slabého signálu vzdálenost od AP, byly všechny chybějící hodnoty nahrazeny hodnotou -100 dBm, která má reprezentovat velmi slabý až nedostupný signál.
   
-### 3. Trénování modelů (Train_w_scikit.py, Train_w_tf.py)
+### 3. Trénování modelů (Train_w_scikit.py, Train_w_tf.py):
   
-Po nasbírání dostatečného množství dat jsou využity knihovny sci-kit learn [11] a tensorflow  [12] pro natrénování modelů strojového učení. Určení konečného počtu poloh dobře koresponduje   s typem problému klasifikace. Při trénování bylo použito 5 různých algoritmů z knihoven sci-kit learn a Tensorflow, které se pro klasifikaci hodí. Po nasbírání dostatečného množství dat jsou využity knihovny sci-kit learn [11] a tensorflow  [12] pro natrénování modelů strojového učení. Určení konečného počtu poloh dobře koresponduje   s typem problému klasifikace. Při trénování bylo použito 5 různých algoritmů z knihoven sci-kit learn a Tensorflow, které se pro klasifikaci hodí. Tyto algoritmy jsou:
+Po nasbírání dostatečného množství dat jsou využity knihovny Sci-kit learn [11] a Tensorflow  [12] pro natrénování modelů strojového učení. Určení konečného počtu poloh dobře koresponduje   s typem problému klasifikace. Při trénování bylo použito 5 různých algoritmů z knihoven Sci-kit learn a Tensorflow, které se pro klasifikaci hodí. 
+<br />
+<br />Tyto algoritmy jsou:
 - KNN (K-nearest neighbors) – Algoritmus, který klasifikuje objekt na základě třídy jeho  nejbližších sousedů.
 - SVM (Support Vector Machine) – Algoritmus, který se snaží najít nadrovinu, jež dobře rozdělí data podle různých kategorií. Nadrovina s maximální vzdáleností od nejbližšího bodu je vybrána. V nejjednodušší formě je SVM binarní klasifikátor a pro vyšší dimenze jich musí být vytvořeno víc.
 -	DT (Decision tree) – Algoritmus, který klasifikuje objekt na základě několika vnořených if/else příkazů s podmínkami vytrénovanými tak, aby byly dosaženy “pure leaf nodes” (uzly, které jednoznačně nebo s dostatečnou přesností určí třídu). Algoritmus rozhoduje na základě entropie stavů. – NEBYL PŘI ŘEŠENÍ POUŽIT, UVEDEN POUZE PRO OBJASNĚNÍ FUNKCE RF
@@ -64,17 +66,17 @@ Poslední částí práce je program, který umí využít natrénované modely 
   
 Řešením by mohlo být:
   1. Použít klasifikátor, kterému různé množství features nevadí
-  2. Využívat jen předem jasně dané sítě a s ostatními vůbec nepracovat.
+  2. Využívat jen předem jasně dané sítě a s ostatními vůbec nepracovat
   3. Předzpracovat data před predikcí
   
-## Dosažené výsledky:
-Bylo zvoleno 5 poloh/místností, ve kterých byla měřena data. Při prvotním natrénovaní modelů nebylo dosaženo požadovaných výsledků. Nasbíraná data byla plná hodnot NaN kvůli tomu, že velké množství AP se nacházelo daleko a jejich signál bylo možné zachytit jen výjimečně – u některých například i méně než 10krát z 600 naměřených hodnot. Pouze ze 3 AP byly signály získávány pravidelně. Většina použitých klasifikátorů dosahovala přesnosti okolo 70%.
+## Dosažené výsledky
+Bylo zvoleno 5 poloh/místností, ve kterých byla měřena data. Při prvotním natrénovaní modelů nebylo dosaženo požadovaných výsledků. Nasbíraná data byla plná hodnot NaN kvůli tomu, že se velké množství AP nacházelo daleko a jejich signál bylo možné zachytit jen výjimečně – u některých například i méně než 10krát z 600 naměřených hodnot. Pouze ze 3 AP byly signály získávány pravidelně. Většina použitých klasifikátorů dosahovala přesnosti okolo 70%.
   
 Aby se výsledky zlepšily, byl přidán AP do jedné z místností. Díky této změně se dosažené výsledky výrazně zlepšily a přesnost klasifikátorů se začala pohybovat okolo 95%
   
 <br />
   
-## Použité zdroje:
+## Použité zdroje
 [1] https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
   
 [2] https://en.wikipedia.org/wiki/Network_address_translation
